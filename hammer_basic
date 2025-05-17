@@ -1,0 +1,15 @@
+from gpiozero import Button
+from signal import pause
+
+jack_input = Button(6, pull_up=True, bounce_time=0.2)
+
+def jack_plugged_in():
+    print("plugged in.")
+
+def jack_unplugged():
+    print("unplugged")
+
+jack_input.when_pressed = jack_plugged_in
+jack_input.when_released = jack_unplugged
+
+pause()
