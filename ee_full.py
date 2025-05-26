@@ -36,14 +36,24 @@ screen.fill("black")
 image = pygame.image.load("images/logo.tiff")
 image = pygame.transform.scale(image,(screen_w,screen_h))
 
-gif = gifpy.load("giphy.gif")
+good_gif = gifpy.load("yes.gif")
 scaledframes = [
     (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
-    for frame, duration in gif.frames
+    for frame, duration in good_gif.frames
 ]
 
-fullscreen_gif = gifpy.GIFPygame(scaledframes)
+good_fullscreen_gif = gifpy.GIFPygame(scaledframes)
+
+bad_gif = gifpy.load("nope.gif")
+scaledframes_nope = [
+        (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
+        for frame, duration in bad_gif.frames
+]
+
+bad_fullscreen_gif = gifpy.GIFPygame(scaledframes_nope)
 screen.blit(image,(x,y))
+
+
 # ~ LED init
 led_on = False
 num_pixels = 240
@@ -142,7 +152,13 @@ def slide(image):
 
 def eject(fullscreen_gif):
     global do_eject
-    fullscreen_gif.render(screen,(0,0))
+    clock=pygame.time.Clock()
+
+    for frame, duration in fullscreen_gif.frames:
+        screen.blit(frame, (0,0))
+        pygame.display.flip()
+        pygame.time.delay(int(duration * 1000))
+#    fullscreen_gif.render(screen,(0,0))
 
     do_eject = False
 
@@ -158,13 +174,11 @@ signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
 
 def hit_action():
-    global press_print, led_on, do_eject, current_hammer, percent
+    global press_print, led_on, do_eject, current_hammer, percent, fullscreen_gif
 
     if press_print==None:
         return
 
-    if do_eject:
-        eject()
 
     if current_hammer == 1:
         hammer_name = "Red Hammer"
@@ -193,6 +207,13 @@ def hit_action():
     print(f"Last button state: {press_print} and threshold {freq_threshold} and hammer {hammer_freq}")
 
     animate_LEDs(duration=3, fps=30)
+
+    if percent == 1.0:
+        fullscreen_gif =  good_fullscreen_gif
+        do_eject = True
+    else:
+        fullscreen_gif = bad_fullscreen_gif
+        do_eject = True
 
 def animate_LEDs(duration=3, fps=30):
     global percent
@@ -242,10 +263,12 @@ while running:
     purple_hammer.when_pressed = hammer_handler(3)
     purple_hammer.when_released = hammer_handler_unplugged(3)
 
+
+
     if do_slide:
         image_update()
     if do_eject:
-        eject()
+        eject(fullscreen_gif)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
