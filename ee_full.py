@@ -40,7 +40,7 @@ screen.fill("black")
 image = pygame.image.load("images/logo.tiff")
 image = pygame.transform.scale(image,(screen_w,screen_h))
 
-good_gif = gifpy.load("yes.gif")
+good_gif = gifpy.load("yes.gif", loops=5)
 scaledframes = [
     (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
     for frame, duration in good_gif.frames
@@ -48,7 +48,7 @@ scaledframes = [
 
 good_fullscreen_gif = gifpy.GIFPygame(scaledframes)
 
-bad_gif = gifpy.load("nope.gif")
+bad_gif = gifpy.load("nope.gif", loops=1)
 scaledframes_nope = [
         (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
         for frame, duration in bad_gif.frames
@@ -156,6 +156,7 @@ def slide(image):
 
 def eject(fullscreen_gif):
     global do_eject
+    sound.play()
     clock=pygame.time.Clock()
 
     for frame, duration in fullscreen_gif.frames:
@@ -164,7 +165,6 @@ def eject(fullscreen_gif):
         pygame.time.delay(int(duration * 1000))
 #    fullscreen_gif.render(screen,(0,0))
     
-    sound.play()
     do_eject = False
 
 
@@ -179,7 +179,7 @@ signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
 
 def hit_action():
-    global press_print, led_on, do_eject, current_hammer, percent, fullscreen_gif
+    global press_print, led_on, do_eject, current_hammer, percent, fullscreen_gif, sound
 
     if press_print==None:
         return
@@ -214,12 +214,12 @@ def hit_action():
     animate_LEDs(duration=3, fps=30)
 
     if percent == 1.0:
-        fullscreen_gif =  good_fullscreen_gif
         sound = yes_sound
+        fullscreen_gif =  good_fullscreen_gif
         do_eject = True
     else:
-        fullscreen_gif = bad_fullscreen_gif
         sound = no_sound
+        fullscreen_gif = bad_fullscreen_gif
         do_eject = True
 
 
@@ -245,9 +245,9 @@ def animate_LEDs(duration=3, fps=30):
                 color = (int(r * 255), int(g * 255), int(b * 255))
 
                 if reverse:
-                    pixel_index = offset + strand_len - 1 - led_step
-                else:
                     pixel_index = offset + led_step
+                else:
+                    pixel_index = offset + strand_len - 1 - led_step
 
                 pixels[pixel_index] = color
 
