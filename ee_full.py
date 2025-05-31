@@ -31,6 +31,10 @@ pygame.init()
 screen = pygame.display.set_mode((screen_w,screen_h))
 running=True
 
+#pygame sounds
+yes_sound = pygame.mixer.Sound("yes.mp3")
+no_sound = pygame.mixer.Sound("no.mp3")
+
 # ~ init logo load
 screen.fill("black")
 image = pygame.image.load("images/logo.tiff")
@@ -159,7 +163,8 @@ def eject(fullscreen_gif):
         pygame.display.flip()
         pygame.time.delay(int(duration * 1000))
 #    fullscreen_gif.render(screen,(0,0))
-
+    
+    sound.play()
     do_eject = False
 
 
@@ -210,10 +215,13 @@ def hit_action():
 
     if percent == 1.0:
         fullscreen_gif =  good_fullscreen_gif
+        sound = yes_sound
         do_eject = True
     else:
         fullscreen_gif = bad_fullscreen_gif
+        sound = no_sound
         do_eject = True
+
 
 def animate_LEDs(duration=3, fps=30):
     global percent
