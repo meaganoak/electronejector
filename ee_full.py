@@ -139,13 +139,13 @@ def image_update():
     do_slide = False
 
     if press_count % 3 == 0:
-        image = pygame.image.load("images/Cs.jpeg")
+        image = pygame.image.load("Cs.png")
 
     elif press_count % 3 == 1:
-        image = pygame.image.load("images/K.jpeg")
+        image = pygame.image.load("K.png")
 
     elif press_count % 3 == 2:
-        image = pygame.image.load("images/Ce.jpeg")
+        image = pygame.image.load("Ce.png")
 
     image = pygame.transform.scale(image,(screen_w,screen_h))
 
