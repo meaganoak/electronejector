@@ -15,30 +15,42 @@ from pygame.locals import *
 hit_button = Button(4, bounce_time=0.05)
 select_button = Button(3, bounce_time=0.05)
 pixel_pin = board.D18
-select_button.hold_time = 5
 press_print=None
 do_slide =False
 do_eject=False
 # ~ global var init
+clock=pygame.time.Clock()
 press_count = 0
 x=0
 y=0
 screen_w = 1920
 screen_h = 1080
+clock.tick(60)
 
-# ~ pygame init
-pygame.init()
-screen = pygame.display.set_mode((screen_w,screen_h))
-running=True
+def main():
+    global screen, running, image, pixels, led_on, num_pixels, ORDER
+    pygame.init()
+    screen = pygame.display.set_mode((1920,1080))
+    running=True
+    # ~ init logo load
+    screen.fill("black")
+    image = pygame.image.load("images/logo.png")
+    image = pygame.transform.scale(image,(1920,1080))
+    screen.blit(image,(x,y))
+    # ~ LED init
+    led_on = False
+    num_pixels = 240
+    ORDER = neopixel.GRB
+    pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=True, pixel_order=ORDER)
+    pixels.fill((0, 0, 0))
+
+main()
 
 #pygame sounds
 yes_sound = pygame.mixer.Sound("yes.mp3")
 no_sound = pygame.mixer.Sound("no.mp3")
 
-# ~ init logo load
-screen.fill("black")
-image = pygame.image.load("images/logo.tiff")
-image = pygame.transform.scale(image,(screen_w,screen_h))
+
 
 good_gif = gifpy.load("yes.gif", loops=5)
 scaledframes = [
@@ -48,6 +60,7 @@ scaledframes = [
 
 good_fullscreen_gif = gifpy.GIFPygame(scaledframes)
 
+
 bad_gif = gifpy.load("nope.gif", loops=1)
 scaledframes_nope = [
         (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
@@ -55,14 +68,8 @@ scaledframes_nope = [
 ]
 
 bad_fullscreen_gif = gifpy.GIFPygame(scaledframes_nope)
-screen.blit(image,(x,y))
 
 
-# ~ LED init
-led_on = False
-num_pixels = 240
-ORDER = neopixel.GRB
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=True, pixel_order=ORDER)
 
 ########## Hammers ###########
 
@@ -107,7 +114,8 @@ def hammer_handler_unplugged(hammer_colour):
 
 def presses():
     # ~ select material for button presses
-    global press_count, press_print,image, do_slide
+    global press_count, press_print,image, do_slide, do_eject
+    do_eject = False
     do_slide = True
     press_count += 1
     pixels.fill((0,0,0))
@@ -148,7 +156,7 @@ def image_update():
 def slide(image):
     global x,y
     for _ in range(95):
-        x+=20
+        x+=screen_w / 30
         screen.blit(image,(x,y))
         pygame.display.flip()
     x=0
@@ -157,14 +165,13 @@ def slide(image):
 def eject(fullscreen_gif):
     global do_eject
     sound.play()
-    clock=pygame.time.Clock()
 
-    for frame, duration in fullscreen_gif.frames:
-        screen.blit(frame, (0,0))
-        pygame.display.flip()
-        pygame.time.delay(int(duration * 1000))
+    for _ in range(1):
+        for frame, duration in fullscreen_gif.frames:
+            screen.blit(frame, (0,0))
+            pygame.display.flip()
+            pygame.time.delay(int(duration * 0.5))
 #    fullscreen_gif.render(screen,(0,0))
-    
     do_eject = False
 
 
@@ -187,25 +194,31 @@ def hit_action():
 
     if current_hammer == 1:
         hammer_name = "Red Hammer"
-        hammer_freq = 1.95
+        #hammer_freq = 1.95
+        hammer_freq = 1.00
     elif current_hammer == 2:
         hammer_name = "Green Hammer"
-        hammer_freq = 2.29
+        #hammer_freq = 2.29
+        hammer_freq = 2
     elif current_hammer == 3:
         hammer_name = "Purple Hammer"
-        hammer_freq= 2.90
+        #hammer_freq= 2.90
+        hammer_freq= 3
     else:
         hammer_name = "No hammer detected"
         hammer_freq = 0.000000001
 
     if press_print == "Cesium":
-        freq_threshold = 1.95
+        #freq_threshold = 1.95
+        freq_threshold = 1
         print("Cesium selected. LEDs on.")
     elif press_print == "Potassium":
-        freq_threshold = 2.29
+        #freq_threshold = 2.29
+        freq_threshold = 2.00
         print("Potassium selected. LEDs on.")
     elif press_print == "Cerium":
-        freq_threshold = 2.90
+        #freq_threshold = 2.90
+        freq_threshold = 3.00
         print("Cerium selected. LEDs on.")
 
     percent = min(hammer_freq / freq_threshold, 1.0)
@@ -256,10 +269,16 @@ def animate_LEDs(duration=3, fps=30):
 
 print("Ready. Press the button.")
 
+def soft_reset():
+    main()
+
+
+
 
 # ~ PyGame loop
 while running:
-    hit_button.when_pressed = hit_action
+    #time.sleep(0.001)
+    hit_button.when_released = hit_action
     select_button.when_pressed = presses
 
     red_hammer.when_pressed = hammer_handler(1)
@@ -282,6 +301,6 @@ while running:
         if event.type == pygame.QUIT:
             shutdown_handler(None, None)
         if event.type == pygame.KEYDOWN:
-            presses()
+            soft_reset()
 
     pygame.display.flip()
