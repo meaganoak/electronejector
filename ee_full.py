@@ -11,33 +11,37 @@ import pygame
 import gif_pygame as gifpy
 from pygame.locals import *
 
-# ~ button init
+### button initialization
 hit_button = Button(4, bounce_time=0.05)
 select_button = Button(3, bounce_time=0.05)
 pixel_pin = board.D18
 press_print=None
+### global var init for button
+press_count = 0
+
+### animation initialization
 do_slide =False
 do_eject=False
-# ~ global var init
-clock=pygame.time.Clock()
-press_count = 0
+### global var init for pygame
 x=0
 y=0
+clock=pygame.time.Clock()
 screen_w = 1920
 screen_h = 1080
 clock.tick(60)
 
+### runs pygame start screen and LED reset
 def main():
     global screen, running, image, pixels, led_on, num_pixels, ORDER
     pygame.init()
     screen = pygame.display.set_mode((1920,1080))
     running=True
-    # ~ init logo load
+### Load electron ejector logo
     screen.fill("black")
     image = pygame.image.load("images/logo.png")
     image = pygame.transform.scale(image,(1920,1080))
     screen.blit(image,(x,y))
-    # ~ LED init
+### LED initialization fill all black 
     led_on = False
     num_pixels = 240
     ORDER = neopixel.GRB
@@ -46,37 +50,32 @@ def main():
 
 main()
 
-#pygame sounds
+### pygame load sounds 
 yes_sound = pygame.mixer.Sound("yes.mp3")
 no_sound = pygame.mixer.Sound("no.mp3")
 
 
-
-good_gif = gifpy.load("yes.gif", loops=5)
+### pygame load gifs/animations 
+good_gif = gifpy.load("yes.gif", loops=1)
 scaledframes = [
     (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
     for frame, duration in good_gif.frames
 ]
-
 good_fullscreen_gif = gifpy.GIFPygame(scaledframes)
-
 
 bad_gif = gifpy.load("nope.gif", loops=1)
 scaledframes_nope = [
         (pygame.transform.scale(frame, (screen_w,screen_h)), duration)
         for frame, duration in bad_gif.frames
 ]
-
 bad_fullscreen_gif = gifpy.GIFPygame(scaledframes_nope)
 
-
-
-########## Hammers ###########
-
+### Hammer set up
 red_hammer = Button(6, pull_up=True, bounce_time=0.2)
 green_hammer = Button(19, pull_up=True, bounce_time=0.2)
 purple_hammer = Button(13, pull_up=True, bounce_time=0.2)
 
+### Hammer initial function - detects on start-up
 def check_initial_hammer():
     global current_hammer
     if red_hammer.is_pressed:
@@ -92,10 +91,9 @@ def check_initial_hammer():
         current_hammer = None
         print("No hammer plugged in at startup.")
 
-# After hammer button definitions:
 check_initial_hammer()
 
-
+### Function for hammer plugged in or unplugged
 def hammer_handler(hammer_colour):
     def plugged_in():
         global current_hammer
@@ -111,9 +109,8 @@ def hammer_handler_unplugged(hammer_colour):
         print(f"Hammer {hammer_colour} unplugged.")
     return unplugged
 
-
+### Select button, determines what materials Cs, K, Ce are shown 
 def presses():
-    # ~ select material for button presses
     global press_count, press_print,image, do_slide, do_eject
     do_eject = False
     do_slide = True
@@ -131,6 +128,7 @@ def presses():
 
     print(press_print)
 
+### Runs select animation to run through material character screens
 def image_update():
     global image, x,y, press_count,do_slide
 
@@ -152,7 +150,7 @@ def image_update():
     screen.blit(image,(0,0))
     pygame.display.flip()
 
-
+### Actual slide animation for switching material screens
 def slide(image):
     global x,y
     for _ in range(95):
@@ -162,6 +160,7 @@ def slide(image):
     x=0
     y=0
 
+### Animation for eject outcome, plays gif and sound 
 def eject(fullscreen_gif):
     global do_eject
     sound.play()
@@ -174,7 +173,7 @@ def eject(fullscreen_gif):
 #    fullscreen_gif.render(screen,(0,0))
     do_eject = False
 
-
+### Shutdown handler, makes sure GPIO does not hang-up and LEDs are reset when exiting
 def shutdown_handler(sig=None, frame=None):
     print("\nExiting... Turning off LEDs.")
     pixels.fill((0, 0, 0))
@@ -185,13 +184,14 @@ def shutdown_handler(sig=None, frame=None):
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)
 
+### Hit button actions
 def hit_action():
     global press_print, led_on, do_eject, current_hammer, percent, fullscreen_gif, sound
 
+### Checks if select has been pressed
     if press_print==None:
         return
-
-
+### Checks the plugged-in hammer and sets threshold frequency of hammer
     if current_hammer == 1:
         hammer_name = "Red Hammer"
         #hammer_freq = 1.95
@@ -207,7 +207,8 @@ def hit_action():
     else:
         hammer_name = "No hammer detected"
         hammer_freq = 0.000000001
-
+### Reads material, sets threshold frequency of material
+    
     if press_print == "Cesium":
         #freq_threshold = 1.95
         freq_threshold = 1
@@ -221,6 +222,7 @@ def hit_action():
         freq_threshold = 3.00
         print("Cerium selected. LEDs on.")
 
+### Compares hammer frequency with threshold frequency of material, produces animation and sounds and LED light up based on outcome yes or no    
     percent = min(hammer_freq / freq_threshold, 1.0)
     print(f"Last button state: {press_print} and threshold {freq_threshold} and hammer {hammer_freq}")
 
@@ -235,7 +237,7 @@ def hit_action():
         fullscreen_gif = bad_fullscreen_gif
         do_eject = True
 
-
+### LED animation, 4 strings in sequence folded back on itself, light up in rainbow and slowly ascend 
 def animate_LEDs(duration=3, fps=30):
     global percent
     strand_len = num_pixels // 4
@@ -269,13 +271,12 @@ def animate_LEDs(duration=3, fps=30):
 
 print("Ready. Press the button.")
 
+
+### Soft reset with keyboard press to title electron ejector screen
 def soft_reset():
     main()
 
-
-
-
-# ~ PyGame loop
+### PyGame loop runs the main software based on button presses and hammers
 while running:
     #time.sleep(0.001)
     hit_button.when_released = hit_action
@@ -289,8 +290,6 @@ while running:
 
     purple_hammer.when_pressed = hammer_handler(3)
     purple_hammer.when_released = hammer_handler_unplugged(3)
-
-
 
     if do_slide:
         image_update()
